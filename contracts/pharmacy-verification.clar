@@ -1,85 +1,82 @@
-;; Pharmacy Verification Contract
-;; This contract confirms legitimate dispensing facilities
+;; Prescriber Verification Contract
+;; This contract validates authorized healthcare providers
 
 ;; Define admin
 (define-data-var admin principal tx-sender)
 
-;; Map of verified pharmacies
-(define-map pharmacies
+;; Map of verified prescribers
+(define-map prescribers
   { id: (string-ascii 32) }
   {
     name: (string-ascii 100),
     license: (string-ascii 50),
-    address: (string-ascii 100),
     status: (string-ascii 10)
   }
 )
 
-;; Register a new pharmacy
-(define-public (register-pharmacy
+;; Register a new prescriber
+(define-public (register-prescriber
     (id (string-ascii 32))
     (name (string-ascii 100))
     (license (string-ascii 50))
-    (address (string-ascii 100))
   )
   (begin
     (asserts! (is-eq tx-sender (var-get admin)) (err u403))
-    (ok (map-set pharmacies
+    (ok (map-set prescribers
       { id: id }
       {
         name: name,
         license: license,
-        address: address,
         status: "pending"
       }
     ))
   )
 )
 
-;; Verify a pharmacy
-(define-public (verify-pharmacy (id (string-ascii 32)))
+;; Verify a prescriber
+(define-public (verify-prescriber (id (string-ascii 32)))
   (begin
     (asserts! (is-eq tx-sender (var-get admin)) (err u403))
-    (asserts! (is-some (map-get? pharmacies { id: id })) (err u404))
+    (asserts! (is-some (map-get? prescribers { id: id })) (err u404))
 
-    (ok (map-set pharmacies
+    (ok (map-set prescribers
       { id: id }
-      (merge (unwrap! (map-get? pharmacies { id: id }) (err u404))
+      (merge (unwrap! (map-get? prescribers { id: id }) (err u404))
         { status: "verified" }
       )
     ))
   )
 )
 
-;; Suspend a pharmacy
-(define-public (suspend-pharmacy (id (string-ascii 32)))
+;; Suspend a prescriber
+(define-public (suspend-prescriber (id (string-ascii 32)))
   (begin
     (asserts! (is-eq tx-sender (var-get admin)) (err u403))
-    (asserts! (is-some (map-get? pharmacies { id: id })) (err u404))
+    (asserts! (is-some (map-get? prescribers { id: id })) (err u404))
 
-    (ok (map-set pharmacies
+    (ok (map-set prescribers
       { id: id }
-      (merge (unwrap! (map-get? pharmacies { id: id }) (err u404))
+      (merge (unwrap! (map-get? prescribers { id: id }) (err u404))
         { status: "suspended" }
       )
     ))
   )
 )
 
-;; Check if a pharmacy is verified
+;; Check if a prescriber is verified
 (define-read-only (is-verified (id (string-ascii 32)))
   (let (
-    (pharmacy (map-get? pharmacies { id: id }))
+    (prescriber (map-get? prescribers { id: id }))
   )
-    (if (is-some pharmacy)
-      (is-eq (get status (unwrap! pharmacy false)) "verified")
+    (if (is-some prescriber)
+      (is-eq (get status (unwrap! prescriber false)) "verified")
       false
     )
   )
 )
 
-;; Get pharmacy details
-(define-read-only (get-pharmacy (id (string-ascii 32)))
-  (map-get? pharmacies { id: id })
+;; Get prescriber details
+(define-read-only (get-prescriber (id (string-ascii 32)))
+  (map-get? prescribers { id: id })
 )
 
